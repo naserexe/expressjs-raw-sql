@@ -1,7 +1,7 @@
 const router = require('express').Router();
 
 const { body } = require('express-validator');
-const { createNewExpenses, getAllExpenses } = require('../controllers/expenseController');
+const { createNewExpenses, getAllExpenses, deleteExpense } = require('../controllers/expenseController');
 const validate = require('../middlewares/reqValidation');
 
 // const { protect, authorize } = require('../middleware/auth');
@@ -22,4 +22,5 @@ const validate = require('../middlewares/reqValidation');
 router.route('/')
   .post(createNewExpenses)
   .get(getAllExpenses);
+router.route('/:id').delete(deleteExpense)
 module.exports = router;

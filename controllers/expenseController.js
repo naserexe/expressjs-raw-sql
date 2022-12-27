@@ -13,8 +13,17 @@ exports.createNewExpenses = asyncHandler(async (req, res, next) => {
       type: QueryTypes.INSERT
     }
   );
+  
 
-  res.status(201).json({ success: true, message: 'Expense created successfully', results, metadata });
+  const  newExpense = await seq.query(
+    `SELECT * FROM expense WHERE id=${results}`,
+    {
+      nest: true,
+      type: QueryTypes.SELECT
+    }
+  );
+
+  res.status(201).json({ success: true, message: 'Expense created successfully', newExpense: newExpense[0]});
 });
 
 exports.getAllExpenses = asyncHandler(async (req, res, next) => {
@@ -24,6 +33,19 @@ exports.getAllExpenses = asyncHandler(async (req, res, next) => {
     {
       nest: true,
       type: QueryTypes.SELECT
+    }
+  );
+
+  res.status(200).json({ success: true, message: 'All expense fetched successfully', expenses });
+});
+
+exports.deleteExpense = asyncHandler(async (req, res, next) => {
+
+  const  expenses = await seq.query(
+    `DELETE FROM expense WHERE id=${req.params.id}`,
+    {
+      nest: true,
+      type: QueryTypes.DELETE
     }
   );
 
