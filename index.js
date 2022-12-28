@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const expenseRoutes = require('./routes/expenseRoutes');
+const authRoutes = require('./routes/authRoutes');
 // const connectDB = require('./config/db');
 const errorHandler = require('./middlewares/error');
 
@@ -16,6 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 const PORT = process.env.PORT || 5000
 
 app.use('/api/expense', expenseRoutes);
+app.use('/api/auth', authRoutes);
 
 app.get('/health', (req, res) => res.send('Server up and running'));
 

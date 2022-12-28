@@ -4,10 +4,10 @@ const seq = require('../config/db')
 
 exports.createNewExpenses = asyncHandler(async (req, res, next) => {
 
-  const { title, amount, type } = req.body
+  const { title, amount, type, userId } = req.body
 
   const  [results, metadata] = await seq.query(
-    `INSERT INTO expense (id, title, amount, type, createdAt) VALUES (NULL, '${title}', '${amount}', '${type}', current_timestamp())`,
+    `INSERT INTO expense (id, title, amount, type, createdAt, user_id) VALUES (NULL, '${title}', '${amount}', '${type}', current_timestamp(), '${userId}')`,
     {
       nest: true,
       type: QueryTypes.INSERT
@@ -16,7 +16,7 @@ exports.createNewExpenses = asyncHandler(async (req, res, next) => {
   
 
   const  newExpense = await seq.query(
-    `SELECT * FROM expense WHERE id=${results}`,
+    `SELECT * FROM expense WHERE id=${results} AND user_id='${req.user.id}'`,
     {
       nest: true,
       type: QueryTypes.SELECT
@@ -29,14 +29,25 @@ exports.createNewExpenses = asyncHandler(async (req, res, next) => {
 exports.getAllExpenses = asyncHandler(async (req, res, next) => {
 
   const  expenses = await seq.query(
-    `SELECT * FROM expense`,
+    `SELECT * FROM expense WHERE user_id='${req.user.id}'`,
     {
       nest: true,
       type: QueryTypes.SELECT
     }
   );
 
-  res.status(200).json({ success: true, message: 'All expense fetched successfully', expenses });
+  const stats = expenses.reduce((acc, curr) => {
+
+    if(curr.type === 'income'){
+      acc.income = acc.income + curr.amount
+    }else{
+      acc.expense = acc.expense  + curr.amount
+    }
+
+    return acc;
+  }, {expense: 0, income: 0})
+
+  res.status(200).json({ success: true, message: 'All expense fetched successfully', stats, expenses, remain: stats.income - stats.expense  });
 });
 
 exports.deleteExpense = asyncHandler(async (req, res, next) => {
@@ -50,4 +61,39 @@ exports.deleteExpense = asyncHandler(async (req, res, next) => {
   );
 
   res.status(200).json({ success: true, message: 'All expense fetched successfully', expenses });
+});
+
+exports.getStats = asyncHandler(async (req, res, next) => {
+
+  let {start_date, end_date, type} = req.query;
+
+  start_date = new Date(start_date)
+  end_date = new Date(end_date)
+
+  console.log(type);
+
+
+  const startDate = `${start_date.getFullYear()}-${start_date.getMonth() +1}-${start_date.getDate()}`
+  const endDate = `${end_date.getFullYear()}-${end_date.getMonth()+1}-${end_date.getDate()}`
+
+  const  expenses = await seq.query(
+    `SELECT * FROM expense WHERE user_id=${req.user.id} AND ${type === 'all' ? '' : 'type='+ `'`+ type+ `'` + ' AND'} cast(createdAt as date) BETWEEN '${startDate}' AND '${endDate}'`,
+    {
+      nest: true,
+      type: QueryTypes.SELECT
+    }
+  );
+
+  const stats = expenses.reduce((acc, curr) => {
+
+    if(curr.type === 'income'){
+      acc.income = acc.income + curr.amount
+    }else{
+      acc.expense = acc.expense  + curr.amount
+    }
+
+    return acc;
+  }, {expense: 0, income: 0})
+
+  res.status(200).json({ success: true, message: 'Expense stats fetched successfully', stats, expenses, remain: stats.income - stats.expense });
 });
